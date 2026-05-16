@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theo Dõi Đầu Tư Vàng – Gold Tracker VN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* ── RESET & TOKENS ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:       #C9952A;
+    --gold-light: #E8B84B;
+    --gold-pale:  #FBF2DC;
+    --ink:        #1A1610;
+    --ink-2:      #3D3526;
+    --ink-3:      #7A6E5A;
+    --cream:      #FAF7F0;
+    --cream-2:    #F0EAD8;
+    --white:      #FFFFFF;
+    --green:      #1A6B3A;
+    --green-bg:   #EAF5EE;
+    --amber:      #9B6A00;
+    --amber-bg:   #FFF8E6;
+    --red:        #9B1F1F;
+    --red-bg:     #FDEAEA;
+    --border:     rgba(201,149,42,0.2);
+    --shadow:     0 4px 32px rgba(26,22,16,0.08);
+    --radius:     12px;
+    --ff-serif:   'Playfair Display', Georgia, serif;
+    --ff-sans:    'DM Sans', sans-serif;
+    --ff-mono:    'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--ff-sans);
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: .5;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,247,240,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    font-family: var(--ff-serif);
+    font-size: 1.25rem; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--gold); flex-shrink: 0;
+  }
+  .header-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+  #last-update {
+    font-family: var(--ff-mono);
+    font-size: 11px; color: var(--ink-3);
+  }
+  .refresh-btn {
+    background: var(--gold); border: none; border-radius: 8px;
+    padding: 7px 16px; font-size: 13px; font-weight: 500;
+    color: var(--white); cursor: pointer; font-family: var(--ff-sans);
+    transition: background .2s, transform .1s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .refresh-btn:hover  { background: var(--gold-light); }
+  .refresh-btn:active { transform: scale(.97); }
+  .refresh-btn.spinning svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── HERO STRIP ── */
+  .hero {
+    background: var(--ink);
+    padding: 3rem 2rem 2.5rem;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: 'Au';
+    position: absolute; right: -1rem; top: -1.5rem;
+    font-family: var(--ff-serif); font-size: 14rem; font-weight: 900;
+    color: rgba(201,149,42,0.06); line-height: 1; pointer-events: none;
+    user-select: none;
+  }
+  .hero-inner { max-width: 960px; margin: 0 auto; position: relative; z-index: 1; }
+  .hero h1 {
+    font-family: var(--ff-serif);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900; color: var(--white);
+    line-height: 1.15; letter-spacing: -0.03em;
+    margin-bottom: .75rem;
+  }
+  .hero h1 span { color: var(--gold-light); }
+  .hero p {
+    color: rgba(255,255,255,.55);
+    font-size: .9rem; max-width: 480px; line-height: 1.6;
+  }
+  .signal-hero {
+    margin-top: 1.5rem;
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 100px; padding: 8px 20px;
+    font-family: var(--ff-mono); font-size: .85rem;
+  }
+  .signal-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gold-light);
+    box-shadow: 0 0 8px var(--gold-light);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+  #hero-signal-text { color: rgba(255,255,255,.85); }
+
+  /* ── MAIN LAYOUT ── */
+  main { max-width: 960px; margin: 0 auto; padding: 2rem; }
+
+  /* ── KPI GRID ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 1.5rem;
+  }
+  .kpi-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.25rem 1rem;
+    position: relative; overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow); }
+  .kpi-card::before {
+    content: attr(data-icon);
+    position: absolute; right: 12px; top: 10px;
+    font-size: 1.5rem; opacity: .15;
+  }
+  .kpi-label {
+    font-size: 10px; font-weight: 500; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+  .kpi-val {
+    font-family: var(--ff-mono);
+    font-size: 1.6rem; font-weight: 500;
+    color: var(--ink); line-height: 1;
+  }
+  .kpi-sub { font-size: 11px; color: var(--ink-3); margin-top: 5px; }
+  .kpi-change {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-family: var(--ff-mono);
+    padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+  }
+  .up   { background: var(--green-bg); color: var(--green); }
+  .down { background: var(--red-bg);   color: var(--red); }
+  .flat { background: var(--cream-2);  color: var(--ink-3); }
+
+  /* ── SIGNAL CARD ── */
+  .signal-card {
+    border-radius: var(--radius);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid;
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .signal-card.buy   { background: var(--green-bg); border-color: var(--green); }
+  .signal-card.wait  { background: var(--amber-bg); border-color: #C89000; }
+  .signal-card.avoid { background: var(--red-bg);   border-color: var(--red); }
+
+  .signal-title { font-family: var(--ff-serif); font-size: 1.3rem; font-weight: 700; }
+  .signal-card.buy   .signal-title { color: var(--green); }
+  .signal-card.wait  .signal-title { color: var(--amber); }
+  .signal-card.avoid .signal-title { color: var(--red); }
+  .signal-desc { font-size: .875rem; color: var(--ink-2); margin-top: 4px; line-height: 1.5; }
+
+  .signal-badge {
+    font-family: var(--ff-mono); font-size: 2rem; font-weight: 500;
+    opacity: .2; flex-shrink: 0;
+  }
+
+  /* ── TWO-COL LAYOUT ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── SECTION CARD ── */
+  .sec-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+  }
+  .sec-title {
+    font-family: var(--ff-serif);
+    font-size: 1rem; font-weight: 700;
+    color: var(--ink); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── FORMULA BOX ── */
+  .formula-box {
+    background: var(--ink); border-radius: 8px;
+    padding: 1rem 1.25rem; margin-bottom: 12px;
+    font-family: var(--ff-mono); font-size: .8rem;
+    color: var(--gold-light); line-height: 1.7;
+  }
+  .formula-comment { color: rgba(255,255,255,.3); }
+
+  /* ── DATA TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .data-table th {
+    text-align: left; padding: 8px 10px;
+    border-bottom: 1px solid var(--cream-2);
+    font-size: 10px; font-weight: 500; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .data-table td { padding: 9px 10px; border-bottom: 1px solid var(--cream-2); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table .mono { font-family: var(--ff-mono); }
+
+  /* ── DIFF BADGE ── */
+  .diff-badge {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-family: var(--ff-mono); font-size: 11px; font-weight: 500;
+  }
+  .diff-great  { background: var(--green-bg); color: var(--green); }
+  .diff-ok     { background: var(--amber-bg); color: var(--amber); }
+  .diff-bad    { background: var(--red-bg);   color: var(--red); }
+
+  /* ── PROFIT CALCULATOR ── */
+  .calc-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .calc-row label { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+  .calc-row input, .calc-row select {
+    border: 1px solid var(--cream-2);
+    border-radius: 8px; padding: 9px 12px;
+    font-size: .9rem; font-family: var(--ff-sans);
+    background: var(--cream); color: var(--ink);
+    transition: border-color .2s;
+    width: 100%;
+  }
+  .calc-row input:focus, .calc-row select:focus {
+    outline: none; border-color: var(--gold);
+  }
+  .result-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-top: 12px;
+  }
+  .result-box {
+    background: var(--cream); border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .result-box .r-label { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+  .result-box .r-val { font-family: var(--ff-mono); font-size: 1.1rem; font-weight: 500; margin-top: 3px; }
+  .winner-box {
+    margin-top: 12px; border-radius: 8px; padding: 12px 14px;
+    font-family: var(--ff-mono); font-size: .85rem; text-align: center;
+    font-weight: 500;
+  }
+
+  /* ── CHART CONTAINER ── */
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* ── HISTORY TABLE WRAPPER ── */
+  .table-wrap { overflow-x: auto; }
+
+  /* ── API STATUS ── */
+  .api-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--ink-3); margin-bottom: 1.5rem;
+    padding: 8px 14px; background: var(--white);
+    border: 1px solid var(--border); border-radius: 8px;
+    width: fit-content;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-ok   { background: var(--green); }
+  .status-err  { background: var(--red); }
+  .status-load { background: var(--gold); animation: pulse 1s infinite; }
+
+  /* ── FOOTER ── */
+  footer {
+    max-width: 960px; margin: 3rem auto 2rem;
+    padding: 0 2rem 1rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px;
+    font-size: 11px; color: var(--ink-3);
+  }
+  footer a { color: var(--gold); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── LOADER OVERLAY ── */
+  #loader {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--ink);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+    transition: opacity .4s;
+  }
+  #loader.hidden { opacity: 0; pointer-events: none; }
+  .loader-logo {
+    font-family: var(--ff-serif); font-size: 2rem; font-weight: 900;
+    color: var(--gold-light); letter-spacing: -0.03em;
+  }
+  .loader-bar {
+    width: 160px; height: 2px;
+    background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden;
+  }
+  .loader-fill {
+    height: 100%; background: var(--gold);
+    border-radius: 2px; width: 0%;
+    transition: width .3s ease;
+  }
+  .loader-msg { font-size: 12px; color: rgba(255,255,255,.4); font-family: var(--ff-mono); }
+
+  /* ── TOOLTIP ── */
+  [data-tip] { position: relative; cursor: help; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink); color: var(--white);
+    font-size: 11px; padding: 5px 10px; border-radius: 6px;
+    white-space: nowrap; z-index: 10; font-family: var(--ff-sans);
+    pointer-events: none;
+  }
+
+  /* ── EDITABLE KPI ── */
+  .kpi-editable {
+    cursor: pointer;
+    border: 1px dashed transparent;
+    transition: border-color .2s, background .2s;
+  }
+  .kpi-editable:hover {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+  }
+  .kpi-editable:hover .kpi-edit-hint { opacity: 1; }
+  .kpi-edit-hint {
+    font-size: 10px; color: var(--gold); margin-top: 4px;
+    opacity: 0; transition: opacity .2s;
+    font-family: var(--ff-mono);
+  }
+  .kpi-input-wrap {
+    display: none; align-items: center; gap: 6px; margin-top: 6px;
+  }
+  .kpi-input-wrap.active { display: flex; }
+  .kpi-inline-input {
+    font-family: var(--ff-mono); font-size: 1.1rem; font-weight: 500;
+    border: 1.5px solid var(--gold); border-radius: 7px;
+    padding: 4px 8px; background: var(--white); color: var(--ink);
+    width: 100%; outline: none;
+  }
+  .kpi-inline-input:focus { box-shadow: 0 0 0 3px rgba(201,149,42,0.15); }
+  .kpi-confirm-btn {
+    background: var(--gold); border: none; border-radius: 6px;
+    padding: 5px 10px; color: var(--white); cursor: pointer;
+    font-size: 12px; font-family: var(--ff-sans); font-weight: 500;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .kpi-confirm-btn:hover { background: var(--gold-light); }
+  .kpi-manual-badge {
+    display: inline-block; font-size: 9px; padding: 1px 6px;
+    border-radius: 10px; background: var(--gold-pale); color: var(--gold);
+    font-family: var(--ff-mono); margin-top: 3px; font-weight: 500;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 0 1rem; }
+    main   { padding: 1rem; }
+    .hero  { padding: 2rem 1rem; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">Gold VN</div>
+  <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+  <div class="loader-msg" id="loader-msg">Đang kết nối API...</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Gold Tracker VN
+  </div>
+  <div class="header-right">
+    <span id="last-update">Chưa cập nhật</span>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+      Cập nhật
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Theo dõi <span>Giá Vàng</span><br>& Đầu tư thông minh</h1>
+    <p>So sánh vàng SJC với thế giới theo thời gian thực. Biết ngay hôm nay nên mua vàng hay gửi ngân hàng.</p>
+    <div class="signal-hero">
+      <div class="signal-dot"></div>
+      <span id="hero-signal-text">Đang tải tín hiệu...</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- API STATUS -->
+  <div class="api-status">
+    <div class="status-dot status-load" id="status-dot"></div>
+    <span id="status-text">Đang lấy dữ liệu từ API...</span>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+
+    <!-- Giá TG – có thể nhập tay -->
+    <div class="kpi-card kpi-editable" data-icon="🌍" onclick="toggleKpiEdit('world')" title="Click để nhập tay giá vàng thế giới">
+      <div class="kpi-label">Vàng thế giới</div>
+      <div class="kpi-val" id="k-world">—</div>
+      <div class="kpi-sub">USD / troy oz</div>
+      <div class="kpi-change flat" id="k-world-change">—</div>
+      <div class="kpi-edit-hint">✏️ Click để nhập tay</div>
+      <div class="kpi-manual-badge" id="k-world-badge" style="display:none">Nhập tay</div>
+      <div class="kpi-input-wrap" id="kpi-wrap-world" onclick="event.stopPropagation()">
+        <input class="kpi-inline-input" id="kpi-input-world" type="number" placeholder="VD: 3300" step="1"
+          onkeydown="if(event.key==='Enter') applyKpiEdit('world')" />
+        <button class="kpi-confirm-btn" onclick="applyKpiEdit('world')">✓</button>
+      </div>
+    </div>
+
+    <!-- SJC VN – có thể nhập tay -->
+    <div class="kpi-card kpi-editable" data-icon="🇻🇳" onclick="toggleKpiEdit('vn')" title="Click để nhập tay giá SJC">
+      <div class="kpi-label">SJC Việt Nam (mua)</div>
+      <div class="kpi-val" id="k-vn">—</div>
+      <div class="kpi-sub">triệu / lượng</div>
+      <div class="kpi-change flat" id="k-vn-note">Cập nhật hàng ngày</div>
+      <div class="kpi-edit-hint">✏️ Click để nhập tay</div>
+      <div class="kpi-manual-badge" id="k-vn-badge" style="display:none">Nhập tay</div>
+      <div class="kpi-input-wrap" id="kpi-wrap-vn" onclick="event.stopPropagation()">
+        <input class="kpi-inline-input" id="kpi-input-vn" type="number" placeholder="VD: 119.5" step="0.1"
+          onkeydown="if(event.key==='Enter') applyKpiEdit('vn')" />
+        <button class="kpi-confirm-btn" onclick="applyKpiEdit('vn')">✓</button>
+      </div>
+    </div>
+
+    <!-- Tỉ giá USD/VND – có thể nhập tay -->
+    <div class="kpi-card kpi-editable" data-icon="💱" onclick="toggleKpiEdit('usd')" title="Click để nhập tay tỉ giá USD/VND">
+      <div class="kpi-label">Tỉ giá USD/VND</div>
+      <div class="kpi-val" id="k-usd">—</div>
+      <div class="kpi-sub">Vietcombank tham chiếu</div>
+      <div class="kpi-edit-hint">✏️ Click để nhập tay</div>
+      <div class="kpi-manual-badge" id="k-usd-badge" style="display:none">Nhập tay</div>
+      <div class="kpi-input-wrap" id="kpi-wrap-usd" onclick="event.stopPropagation()">
+        <input class="kpi-inline-input" id="kpi-input-usd" type="number" placeholder="VD: 25800" step="10"
+          onkeydown="if(event.key==='Enter') applyKpiEdit('usd')" />
+        <button class="kpi-confirm-btn" onclick="applyKpiEdit('usd')">✓</button>
+      </div>
+    </div>
+
+    <!-- Giá quy đổi – chỉ hiển thị, tự tính -->
+    <div class="kpi-card" data-icon="📐">
+      <div class="kpi-label">Giá quy đổi TG→VN</div>
+      <div class="kpi-val" id="k-conv">—</div>
+      <div class="kpi-sub">triệu / lượng (tự tính)</div>
+      <div class="kpi-change flat" style="font-size:10px;margin-top:6px">= Vàng_TG × Tỉgiá × 1.20566 ÷ 1M</div>
+    </div>
+
+    <!-- Chênh lệch – chỉ hiển thị, tự tính -->
+    <div class="kpi-card" data-icon="📊">
+      <div class="kpi-label" data-tip="Chênh lệch = (VN - quy đổi) / quy đổi × 100%">Chênh lệch VN-TG</div>
+      <div class="kpi-val" id="k-diff" style="color:var(--red)">—</div>
+      <div class="kpi-sub">% VN đắt hơn TG</div>
+      <div class="kpi-change flat" style="font-size:10px;margin-top:6px">Tự tính từ 3 trường trên</div>
+    </div>
+
+    <div class="kpi-card" data-icon="🏦">
+      <div class="kpi-label">Lãi suất ACB 6 tháng</div>
+      <div class="kpi-val" id="k-bank">4.6%</div>
+      <div class="kpi-sub">/ năm – <a href="https://acb.com.vn/lai-suat-tien-gui" target="_blank" style="color:var(--gold)">Xem ACB</a></div>
+    </div>
+  </div>
+
+  <!-- SIGNAL CARD -->
+  <div class="signal-card wait" id="signal-card">
+    <div>
+      <div class="signal-title" id="sig-title">Đang phân tích...</div>
+      <div class="signal-desc" id="sig-desc">Vui lòng chờ trong giây lát.</div>
+    </div>
+    <div class="signal-badge" id="sig-badge">?</div>
+  </div>
+
+  <!-- TWO COL -->
+  <div class="two-col">
+
+    <!-- CÔNG THỨC -->
+    <div class="sec-card">
+      <div class="sec-title">Công thức quy đổi</div>
+      <div class="formula-box">
+        <span class="formula-comment">// Giá TG quy sang VN (lý thuyết)</span><br>
+        Giá quy đổi =<br>
+        &nbsp; Vàng_TG_USD × Tỉ_giá<br>
+        &nbsp; × 1.20566 ÷ 1,000,000<br><br>
+        <span class="formula-comment">// Hệ số 1.20566 = 37.5g / 31.1035g</span><br>
+        <span class="formula-comment">// (1 lượng / 1 troy oz)</span><br><br>
+        <span class="formula-comment">// Chênh lệch</span><br>
+        Diff % = (VN − QuyĐổi)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ÷ QuyĐổi × 100
+      </div>
+      <div class="formula-box" style="margin-bottom:0">
+        <span class="formula-comment">// Lãi ngân hàng</span><br>
+        Lãi_ngày&nbsp; = Vốn × (LS/100) / 365<br>
+        Lãi_tháng = Vốn × (LS/100) / 12<br>
+        Lãi_năm&nbsp;&nbsp; = Vốn × (LS/100)
+      </div>
+    </div>
+
+    <!-- PHÂN TÍCH TÍN HIỆU -->
+    <div class="sec-card">
+      <div class="sec-title">Bảng tín hiệu</div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Chênh lệch</th><th>Tín hiệu</th><th>Hành động</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">&lt; 5%</td>
+            <td><span class="diff-badge diff-great">MUA MẠNH</span></td>
+            <td style="font-size:12px">Cơ hội hiếm</td>
+          </tr>
+          <tr>
+            <td class="mono">5 – 10%</td>
+            <td><span class="diff-badge diff-great">MUA DCA</span></td>
+            <td style="font-size:12px">Mua đều hàng tháng</td>
+          </tr>
+          <tr>
+            <td class="mono">10 – 20%</td>
+            <td><span class="diff-badge diff-ok">CHỜ</span></td>
+            <td style="font-size:12px">Gửi bank tạm</td>
+          </tr>
+          <tr>
+            <td class="mono">20 – 30%</td>
+            <td><span class="diff-badge diff-bad">TRÁNH</span></td>
+            <td style="font-size:12px">Rủi ro cao</td>
+          </tr>
+          <tr>
+            <td class="mono">&gt; 30%</td>
+            <td><span class="diff-badge diff-bad">XEM XÉT BÁN</span></td>
+            <td style="font-size:12px">Chốt lời nếu có</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BIỂU ĐỒ -->
+  <div class="sec-card" style="margin-bottom:1.5rem">
+    <div class="sec-title">Lịch sử giá vàng thế giới (30 ngày giả lập)</div>
+    <div class="chart-wrap">
+      <canvas id="price-chart" role="img" aria-label="Biểu đồ giá vàng thế giới 30 ngày"></canvas>
+    </div>
+  </div>
+
+  <!-- TWO COL: CALCULATOR + SO SÁNH -->
+  <div class="two-col">
+
+    <!-- MÁY TÍNH -->
+    <div class="sec-card">
+      <div class="sec-title">Máy tính đầu tư</div>
+      <div class="calc-row">
+        <label>Số tiền (triệu VNĐ)</label>
+        <input type="number" id="c-amount" value="500" oninput="calcProfit()" placeholder="500">
+      </div>
+      <div class="calc-row">
+        <label>Kỳ hạn</label>
+        <select id="c-term" onchange="calcProfit()">
+          <option value="1">1 tháng</option>
+          <option value="3">3 tháng</option>
+          <option value="6" selected>6 tháng</option>
+          <option value="12">12 tháng</option>
+        </select>
+      </div>
+      <div class="calc-row">
+        <label>Lãi suất bank (%/năm)</label>
+        <input type="number" id="c-rate" value="4.6" oninput="calcProfit()" step="0.1">
+      </div>
+      <div class="calc-row">
+        <label>Dự báo vàng tăng (%/kỳ)</label>
+        <input type="number" id="c-gold-pct" value="5" oninput="calcProfit()" step="0.5">
+      </div>
+
+      <div class="result-grid">
+        <div class="result-box">
+          <div class="r-label">Lãi bank / ngày</div>
+          <div class="r-val" id="r-daily">—</div>
+        </div>
+        <div class="result-box">
+          <div class="r-label">Lãi bank / tháng</div>
+          <div class="r-val" id="r-monthly">—</div>
+        </div>
+        <div class="result-box">
+          <div class="r-label">Lãi bank kỳ hạn</div>
+          <div class="r-val" id="r-term">—</div>
+        </div>
+        <div class="result-box">
+          <div class="r-label">Lợi nhuận vàng</div>
+          <div class="r-val" id="r-gold">—</div>
+        </div>
+      </div>
+      <div class="winner-box" id="winner-box" style="background:var(--cream-2);color:var(--ink-3)">
+        Nhập số liệu để xem kênh nào tốt hơn
+      </div>
+    </div>
+
+    <!-- LỊCH SỬ NHẬP TAY -->
+    <div class="sec-card">
+      <div class="sec-title">Lịch sử theo dõi</div>
+      <p style="font-size:12px;color:var(--ink-3);margin-bottom:12px">Nhập giá thủ công mỗi ngày để theo dõi xu hướng:</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="number" id="h-world" placeholder="Giá TG (USD)" style="flex:1;min-width:100px;border:1px solid var(--cream-2);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--cream);color:var(--ink)">
+        <input type="number" id="h-vn" placeholder="SJC (triệu)" style="flex:1;min-width:90px;border:1px solid var(--cream-2);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--cream);color:var(--ink)">
+        <button onclick="addHistory()" style="background:var(--gold);border:none;border-radius:8px;padding:8px 14px;color:var(--white);font-size:13px;cursor:pointer;font-family:var(--ff-sans)">Thêm</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="history-table">
+          <thead><tr><th>Ngày</th><th>TG (USD)</th><th>VN (tr)</th><th>Chênh lệch</th></tr></thead>
+          <tbody id="history-body">
+            <tr><td colspan="4" style="text-align:center;color:var(--ink-3);font-size:12px;padding:20px">Chưa có dữ liệu. Thêm hàng ngày!</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- API GUIDE -->
+  <div class="sec-card" style="margin-bottom:1.5rem">
+    <div class="sec-title">Nguồn API thực tế đang dùng</div>
+    <table class="data-table">
+      <thead><tr><th>Dữ liệu</th><th>API nguồn</th><th>Miễn phí</th><th>Giới hạn</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Giá vàng TG (USD/oz)</td>
+          <td class="mono" style="font-size:11px"><a href="https://api.metals.live/v1/spot/gold" target="_blank" style="color:var(--gold)">metals.live/v1/spot</a></td>
+          <td><span class="diff-badge diff-great">Có</span></td>
+          <td style="font-size:12px">Không cần key</td>
+        </tr>
+        <tr>
+          <td>Giá vàng TG (dự phòng)</td>
+          <td class="mono" style="font-size:11px"><a href="https://goldpricez.com/api" target="_blank" style="color:var(--gold)">goldpricez.com</a></td>
+          <td><span class="diff-badge diff-great">Có</span></td>
+          <td style="font-size:12px">Không cần key</td>
+        </tr>
+        <tr>
+          <td>Tỉ giá USD/VND</td>
+          <td class="mono" style="font-size:11px"><a href="https://open.er-api.com/v6/latest/USD" target="_blank" style="color:var(--gold)">open.er-api.com</a></td>
+          <td><span class="diff-badge diff-great">Có</span></td>
+          <td style="font-size:12px">1500 req/tháng</td>
+        </tr>
+        <tr>
+          <td>Giá SJC trong nước</td>
+          <td class="mono" style="font-size:11px">Nhập tay / giavang.org</td>
+          <td><span class="diff-badge diff-ok">Thủ công</span></td>
+          <td style="font-size:12px">CORS block scraping</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span>Gold Tracker VN – Chỉ tham khảo, không phải lời khuyên đầu tư.</span>
+  <span>
+    Nguồn: <a href="https://giavang.org" target="_blank">giavang.org</a> ·
+    <a href="https://acb.com.vn/lai-suat-tien-gui" target="_blank">ACB lãi suất</a> ·
+    <a href="https://api.metals.live" target="_blank">metals.live API</a>
+  </span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const state = {
+  worldGold   : 0,
+  usdvnd      : 25800,
+  vnGold      : 0,      // nhập tay hoặc cache
+  bankRate    : 4.6,
+  history     : JSON.parse(localStorage.getItem('goldHistory') || '[]'),
+  chart       : null,
+  manualWorld : false,  // đã nhập tay giá TG?
+  manualVN    : false,  // đã nhập tay SJC?
+  manualUSD   : false,  // đã nhập tay tỉ giá?
+};
+
+// ═══════════════════════════════════════════════
+//  LOADER
+// ═══════════════════════════════════════════════
+function setLoader(pct, msg) {
+  document.getElementById('loader-fill').style.width = pct + '%';
+  document.getElementById('loader-msg').textContent   = msg;
+}
+function hideLoader() {
+  const el = document.getElementById('loader');
+  el.classList.add('hidden');
+  setTimeout(() => el.remove(), 500);
+}
+
+// ═══════════════════════════════════════════════
+//  API CALLS
+// ═══════════════════════════════════════════════
+
+/** Lấy giá vàng thế giới từ metals.live (không cần key, CORS OK) */
+async function fetchWorldGold() {
+  // Thử metals.live
+  try {
+    const res  = await fetch('https://api.metals.live/v1/spot/gold', { signal: AbortSignal.timeout(6000) });
+    const data = await res.json();
+    const price = Array.isArray(data) ? data[0]?.price : data?.price;
+    if (price && price > 1000) return parseFloat(price.toFixed(2));
+  } catch (_) {}
+
+  // Dự phòng: frankfurter.app XAU (troy oz vs USD)
+  try {
+    const res  = await fetch('https://api.frankfurter.app/latest?from=XAU&to=USD', { signal: AbortSignal.timeout(6000) });
+    const data = await res.json();
+    const val  = data?.rates?.USD;
+    if (val && val > 1000) return parseFloat(val.toFixed(2));
+  } catch (_) {}
+
+  return 0; // Cần nhập tay
+}
+
+/** Lấy tỉ giá USD/VND từ ExchangeRate API (miễn phí, không key) */
+async function fetchUSDVND() {
+  try {
+    const res  = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(6000) });
+    const data = await res.json();
+    const val  = data?.rates?.VND;
+    if (val && val > 20000) return Math.round(val);
+  } catch (_) {}
+
+  // Dự phòng
+  try {
+    const res  = await fetch('https://api.frankfurter.app/latest?from=USD&to=VND', { signal: AbortSignal.timeout(6000) });
+    const data = await res.json();
+    const val  = data?.rates?.VND;
+    if (val && val > 20000) return Math.round(val);
+  } catch (_) {}
+
+  return 25800; // Fallback mặc định
+}
+
+// ═══════════════════════════════════════════════
+//  TÍNH TOÁN
+// ═══════════════════════════════════════════════
+const CONV = 37.5 / 31.1035; // 1.20566 – hệ số lượng/oz
+
+function calcConvertedPrice(worldUSD, usdvnd) {
+  return worldUSD * usdvnd * CONV / 1_000_000;
+}
+
+function calcDiff(vnPrice, convertedPrice) {
+  if (!convertedPrice) return 0;
+  return (vnPrice - convertedPrice) / convertedPrice * 100;
+}
+
+function getSignal(diff) {
+  if (diff < 5)  return { cls: 'buy',   icon: '↑', label: 'MUA MẠNH',        desc: `Chênh lệch chỉ ${diff.toFixed(1)}% – Cơ hội hiếm, giá VN gần bằng thế giới. Nên mua ngay.` };
+  if (diff < 10) return { cls: 'buy',   icon: '↗', label: 'MUA DCA',          desc: `Chênh lệch ${diff.toFixed(1)}% – Hợp lý. Nên mua đều mỗi tháng (Dollar Cost Averaging).` };
+  if (diff < 20) return { cls: 'wait',  icon: '→', label: 'CHỜ – GỬI BANK',  desc: `Chênh lệch ${diff.toFixed(1)}% – Vàng VN đắt so TG. Gửi ngân hàng kỳ này và theo dõi thêm.` };
+  if (diff < 30) return { cls: 'avoid', icon: '↘', label: 'TRÁNH MUA',        desc: `Chênh lệch ${diff.toFixed(1)}% – Rủi ro điều chỉnh cao. Giữ tiền mặt, gửi tiết kiệm.` };
+  return         { cls: 'avoid', icon: '↓', label: 'XEM XÉT BÁN',       desc: `Chênh lệch ${diff.toFixed(1)}% – Quá cao. Nếu đang nắm giữ vàng, có thể xem xét chốt lời.` };
+}
+
+// ═══════════════════════════════════════════════
+//  UI UPDATES
+// ═══════════════════════════════════════════════
+function fmtNum(n, dec = 0)  { return n.toLocaleString('vi-VN', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function fmtMoney(n)         { return fmtNum(Math.round(n)) + ' đ'; }
+
+function updateKPIs() {
+  const { worldGold, usdvnd, vnGold, bankRate } = state;
+  const conv = calcConvertedPrice(worldGold, usdvnd);
+  const diff = (vnGold > 0 && worldGold > 0) ? calcDiff(vnGold, conv) : null;
+
+  if (!state.manualWorld)
+    document.getElementById('k-world').textContent = worldGold > 0 ? '$' + fmtNum(worldGold, 0) : '—';
+  if (!state.manualVN)
+    document.getElementById('k-vn').textContent    = vnGold   > 0 ? fmtNum(vnGold, 1) : '—';
+  if (!state.manualUSD)
+    document.getElementById('k-usd').textContent   = fmtNum(usdvnd);
+
+  document.getElementById('k-conv').textContent  = (worldGold > 0 && usdvnd > 0) ? fmtNum(conv, 2) : '—';
+  document.getElementById('k-bank').textContent  = bankRate + '%';
+
+  if (diff !== null) {
+    const el = document.getElementById('k-diff');
+    el.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%';
+    el.style.color = diff < 10 ? 'var(--green)' : diff < 20 ? 'var(--amber)' : 'var(--red)';
+  } else {
+    document.getElementById('k-diff').textContent = '—';
+    document.getElementById('k-diff').style.color = 'var(--ink-3)';
+  }
+
+  updateSignalCard(diff);
+  updateHeroSignal(diff);
+}
+
+function updateSignalCard(diff) {
+  if (diff === null) return;
+  const sig  = getSignal(diff);
+  const card = document.getElementById('signal-card');
+  card.className   = 'signal-card ' + sig.cls;
+  document.getElementById('sig-title').textContent = sig.label;
+  document.getElementById('sig-desc').textContent  = sig.desc;
+  document.getElementById('sig-badge').textContent = sig.icon;
+}
+
+function updateHeroSignal(diff) {
+  const el = document.getElementById('hero-signal-text');
+  if (diff === null) { el.textContent = 'Đang tải...'; return; }
+  const sig = getSignal(diff);
+  el.textContent = `Tín hiệu hôm nay: ${sig.label} | Chênh lệch VN-TG: ${diff.toFixed(1)}%`;
+}
+
+function updateAPIStatus(ok, msg) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className  = 'status-dot ' + (ok ? 'status-ok' : 'status-err');
+  text.textContent = msg;
+}
+
+function updateLastTime() {
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    'Cập nhật: ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ═══════════════════════════════════════════════
+//  CHART
+// ═══════════════════════════════════════════════
+function buildChart(currentPrice) {
+  const ctx = document.getElementById('price-chart').getContext('2d');
+
+  // Tạo 30 ngày dữ liệu giả lập dựa trên giá hiện tại
+  const labels = [], prices = [];
+  const seed = currentPrice || 3200;
+  let p = seed * 0.95;
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    labels.push(d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
+    p += (Math.random() - 0.47) * seed * 0.008;
+    prices.push(Math.round(p));
+  }
+  // Gắn giá thực vào ngày cuối
+  if (currentPrice > 0) prices[29] = currentPrice;
+
+  const ma7 = prices.map((_, i) => {
+    if (i < 6) return null;
+    return Math.round(prices.slice(i - 6, i + 1).reduce((a, b) => a + b, 0) / 7);
+  });
+
+  if (state.chart) state.chart.destroy();
+  state.chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Vàng TG (USD/oz)',
+          data: prices,
+          borderColor: '#C9952A',
+          backgroundColor: 'rgba(201,149,42,0.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true, tension: 0.3,
+        },
+        {
+          label: 'MA7',
+          data: ma7,
+          borderColor: '#7A6E5A',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0, fill: false, tension: 0.3,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, maxTicksLimit: 8 } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => '$' + v.toLocaleString(), font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  PROFIT CALCULATOR
+// ═══════════════════════════════════════════════
+function calcProfit() {
+  const amount  = parseFloat(document.getElementById('c-amount').value)  || 0;
+  const months  = parseInt(document.getElementById('c-term').value)       || 6;
+  const rate    = parseFloat(document.getElementById('c-rate').value)     || 4.6;
+  const goldPct = parseFloat(document.getElementById('c-gold-pct').value) || 0;
+
+  const daily   = amount * (rate / 100) / 365;
+  const monthly = amount * (rate / 100) / 12;
+  const term    = amount * (rate / 100) * (months / 12);
+  const gold    = amount * (goldPct / 100);
+
+  document.getElementById('r-daily').textContent   = fmtMoney(daily * 1_000_000);
+  document.getElementById('r-monthly').textContent = fmtMoney(monthly * 1_000_000);
+  document.getElementById('r-term').textContent    = fmtMoney(term * 1_000_000);
+  document.getElementById('r-gold').textContent    = fmtMoney(gold * 1_000_000);
+
+  const winner = document.getElementById('winner-box');
+  if (!goldPct) { winner.textContent = 'Nhập dự báo vàng để so sánh'; return; }
+  if (gold > term) {
+    winner.style.background = 'var(--green-bg)';
+    winner.style.color = 'var(--green)';
+    winner.textContent = `🥇 Vàng thắng! Lợi hơn bank ${fmtMoney((gold - term) * 1_000_000)} / kỳ`;
+  } else {
+    winner.style.background = 'var(--amber-bg)';
+    winner.style.color = 'var(--amber)';
+    winner.textContent = `🏦 Bank thắng! An toàn hơn vàng ${fmtMoney((term - gold) * 1_000_000)} / kỳ`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY LOG
+// ═══════════════════════════════════════════════
+function addHistory() {
+  const world = parseFloat(document.getElementById('h-world').value);
+  const vn    = parseFloat(document.getElementById('h-vn').value);
+  if (!world || !vn) { alert('Vui lòng nhập cả 2 giá trị!'); return; }
+
+  const conv = calcConvertedPrice(world, state.usdvnd);
+  const diff = calcDiff(vn, conv);
+  const entry = {
+    date : new Date().toLocaleDateString('vi-VN'),
+    world, vn, diff: diff.toFixed(1)
+  };
+  state.history.unshift(entry);
+  if (state.history.length > 60) state.history.pop();
+  localStorage.setItem('goldHistory', JSON.stringify(state.history));
+  renderHistory();
+  document.getElementById('h-world').value = '';
+  document.getElementById('h-vn').value    = '';
+}
+
+function renderHistory() {
+  const body = document.getElementById('history-body');
+  if (!state.history.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-3);font-size:12px;padding:20px">Chưa có dữ liệu. Thêm hàng ngày!</td></tr>';
+    return;
+  }
+  body.innerHTML = state.history.slice(0, 14).map(e => {
+    const d   = parseFloat(e.diff);
+    const cls = d < 10 ? 'diff-great' : d < 20 ? 'diff-ok' : 'diff-bad';
+    return `<tr>
+      <td class="mono" style="font-size:12px">${e.date}</td>
+      <td class="mono">$${fmtNum(e.world)}</td>
+      <td class="mono">${fmtNum(e.vn, 1)}</td>
+      <td><span class="diff-badge ${cls}">${d >= 0 ? '+' : ''}${e.diff}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  MAIN LOAD
+// ═══════════════════════════════════════════════
+async function loadAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  updateAPIStatus(false, 'Đang lấy dữ liệu...');
+
+  // Parallel fetch
+  setLoader(20, 'Kết nối API giá vàng thế giới...');
+  const [worldGold, usdvnd] = await Promise.all([
+    fetchWorldGold(),
+    fetchUSDVND(),
+  ]);
+
+  setLoader(70, 'Tính toán và cập nhật giao diện...');
+
+  state.worldGold = worldGold;
+  state.usdvnd    = usdvnd;
+
+  // Ưu tiên giá đã nhập tay (không bị overwrite bởi API)
+  const cachedVN  = parseFloat(localStorage.getItem('vnGold')    || '0');
+  const cachedW   = parseFloat(localStorage.getItem('worldGold') || '0');
+  const cachedUSD = parseFloat(localStorage.getItem('usdvnd')    || '0');
+  if (cachedVN  > 50)    { state.vnGold    = cachedVN;  state.manualVN    = true; }
+  if (cachedW   > 1000)  { state.worldGold = cachedW;   state.manualWorld = true; }
+  if (cachedUSD > 20000) { state.usdvnd    = cachedUSD; state.manualUSD   = true; }
+  else if (cachedVN <= 50) {
+    const cached = parseFloat(localStorage.getItem('vnGold') || '0');
+    if (cached > 50) state.vnGold = cached;
+  }
+
+  updateKPIs();
+  buildChart(worldGold);
+  calcProfit();
+  renderHistory();
+  updateLastTime();
+
+  const ok = state.worldGold > 0;
+  if (ok) {
+    const src = state.manualWorld ? 'Nhập tay' : 'metals.live';
+    updateAPIStatus(true, `OK – Vàng TG: $${fmtNum(state.worldGold)} | USD/VND: ${fmtNum(state.usdvnd)} | ${src} + open.er-api.com`);
+  } else {
+    updateAPIStatus(false, 'Không lấy được giá vàng TG (CORS). Click vào card 🌍 để nhập tay.');
+  }
+
+  setLoader(100, 'Hoàn tất!');
+  setTimeout(hideLoader, 400);
+  btn.classList.remove('spinning');
+}
+
+// ═══════════════════════════════════════════════
+//  INLINE KPI EDITOR
+// ═══════════════════════════════════════════════
+function toggleKpiEdit(field) {
+  const wrap = document.getElementById('kpi-wrap-' + field);
+  const isActive = wrap.classList.contains('active');
+  // Đóng tất cả trước
+  ['world','vn','usd'].forEach(f => {
+    document.getElementById('kpi-wrap-' + f).classList.remove('active');
+  });
+  if (!isActive) {
+    wrap.classList.add('active');
+    const inp = document.getElementById('kpi-input-' + field);
+    // Pre-fill current value
+    if (field === 'world' && state.worldGold > 0) inp.value = state.worldGold;
+    if (field === 'vn'    && state.vnGold    > 0) inp.value = state.vnGold;
+    if (field === 'usd'   && state.usdvnd    > 0) inp.value = state.usdvnd;
+    setTimeout(() => inp.focus(), 50);
+  }
+}
+
+function applyKpiEdit(field) {
+  const val = parseFloat(document.getElementById('kpi-input-' + field).value);
+  if (!val || val <= 0) return;
+
+  const badge = document.getElementById('k-' + (field === 'usd' ? 'usd' : field) + '-badge');
+
+  if (field === 'world') {
+    state.worldGold  = val;
+    state.manualWorld = true;
+    document.getElementById('k-world').textContent = '$' + fmtNum(val, 0);
+    if (badge) badge.style.display = 'inline-block';
+    localStorage.setItem('worldGold', val);
+    buildChart(val);
+  } else if (field === 'vn') {
+    state.vnGold  = val;
+    state.manualVN = true;
+    document.getElementById('k-vn').textContent = fmtNum(val, 1);
+    if (badge) badge.style.display = 'inline-block';
+    localStorage.setItem('vnGold', val);
+  } else if (field === 'usd') {
+    state.usdvnd  = val;
+    state.manualUSD = true;
+    document.getElementById('k-usd').textContent = fmtNum(val, 0);
+    if (badge) badge.style.display = 'inline-block';
+    localStorage.setItem('usdvnd', val);
+  }
+
+  // Đóng input
+  document.getElementById('kpi-wrap-' + field).classList.remove('active');
+  // Tính lại ngay
+  updateKPIs();
+}
+
+// Hỏi giá SJC nếu chưa có (silent từ localStorage, không dùng prompt)
+function promptVNGold() {
+  const cachedVN  = parseFloat(localStorage.getItem('vnGold')    || '0');
+  const cachedW   = parseFloat(localStorage.getItem('worldGold') || '0');
+  const cachedUSD = parseFloat(localStorage.getItem('usdvnd')    || '0');
+
+  if (cachedVN  > 50)    { state.vnGold   = cachedVN;  state.manualVN    = true; document.getElementById('k-vn-badge').style.display = 'inline-block'; }
+  if (cachedW   > 1000)  { state.worldGold = cachedW;  state.manualWorld = true; document.getElementById('k-world-badge').style.display = 'inline-block'; }
+  if (cachedUSD > 20000) { state.usdvnd    = cachedUSD; state.manualUSD  = true; document.getElementById('k-usd-badge').style.display = 'inline-block'; }
+
+  updateKPIs();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  calcProfit();
+  renderHistory();
+
+  // Animate loader
+  let p = 0;
+  const interval = setInterval(() => {
+    p = Math.min(p + 5, 15);
+    document.getElementById('loader-fill').style.width = p + '%';
+  }, 100);
+
+  await loadAll();
+  clearInterval(interval);
+
+  // Hỏi giá SJC nếu chưa có
+  setTimeout(promptVNGold, 800);
+
+  // Tự refresh mỗi 5 phút
+  setInterval(loadAll, 5 * 60 * 1000);
+});
+</script>
+</body>
+</html>
